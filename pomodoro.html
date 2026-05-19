@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pomodoro Timer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.5s linear;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+    .btn-mode.active {
+      background-color: rgba(255,255,255,0.25);
+      font-weight: 600;
+    }
+    #start-btn:active { transform: scale(0.97); }
+  </style>
+</head>
+<body id="app" class="min-h-screen flex flex-col items-center justify-center transition-colors duration-700 bg-red-500">
+
+  <div class="w-full max-w-md px-4 flex flex-col items-center gap-6">
+
+    <!-- Title -->
+    <h1 class="text-white text-4xl font-bold tracking-wide drop-shadow">Pomodoro</h1>
+
+    <!-- Mode Tabs -->
+    <div class="flex gap-1 bg-black/20 rounded-full p-1">
+      <button class="btn-mode active text-white px-5 py-2 rounded-full text-sm transition-all" data-mode="pomodoro" data-time="1500">Pomodoro</button>
+      <button class="btn-mode text-white px-5 py-2 rounded-full text-sm transition-all" data-mode="short" data-time="300">Short Break</button>
+      <button class="btn-mode text-white px-5 py-2 rounded-full text-sm transition-all" data-mode="long" data-time="900">Long Break</button>
+    </div>
+
+    <!-- Timer Circle -->
+    <div class="relative flex items-center justify-center">
+      <svg width="240" height="240" class="drop-shadow-xl">
+        <circle cx="120" cy="120" r="108" fill="rgba(0,0,0,0.15)" stroke="none"/>
+        <circle
+          id="progress-ring"
+          class="progress-ring-circle"
+          cx="120" cy="120" r="108"
+          fill="none"
+          stroke="rgba(255,255,255,0.9)"
+          stroke-width="8"
+          stroke-linecap="round"
+          stroke-dasharray="678.6"
+          stroke-dashoffset="0"
+        />
+      </svg>
+      <div class="absolute flex flex-col items-center">
+        <span id="timer-display" class="text-white text-6xl font-mono font-bold tracking-widest">25:00</span>
+        <span id="mode-label" class="text-white/70 text-sm mt-1 uppercase tracking-widest">Focus</span>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex items-center gap-4">
+      <button id="reset-btn" class="text-white/70 hover:text-white transition-colors p-2" title="Reset">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+
+      <button id="start-btn" class="bg-white text-red-500 font-bold text-lg px-12 py-4 rounded-full shadow-lg hover:shadow-xl transition-all uppercase tracking-widest">
+        Start
+      </button>
+
+      <button id="skip-btn" class="text-white/70 hover:text-white transition-colors p-2" title="Skip">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Session Counter -->
+    <div class="flex flex-col items-center gap-2">
+      <p class="text-white/70 text-xs uppercase tracking-widest"># <span id="session-count">1</span></p>
+      <div id="session-dots" class="flex gap-2">
+        <div class="session-dot w-3 h-3 rounded-full bg-white/90"></div>
+        <div class="session-dot w-3 h-3 rounded-full bg-white/30"></div>
+        <div class="session-dot w-3 h-3 rounded-full bg-white/30"></div>
+        <div class="session-dot w-3 h-3 rounded-full bg-white/30"></div>
+      </div>
+      <p class="text-white/50 text-xs">Sessions until long break</p>
+    </div>
+
+    <!-- Settings card -->
+    <div class="w-full bg-black/20 rounded-2xl p-4 flex justify-around text-white">
+      <div class="flex flex-col items-center gap-1">
+        <label class="text-xs text-white/60 uppercase tracking-widest">Pomodoro</label>
+        <input id="input-pomodoro" type="number" min="1" max="99" value="25"
+          class="w-16 text-center bg-white/20 rounded-lg py-1 text-white font-bold focus:outline-none focus:ring-2 focus:ring-white/50" />
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <label class="text-xs text-white/60 uppercase tracking-widest">Short Break</label>
+        <input id="input-short" type="number" min="1" max="99" value="5"
+          class="w-16 text-center bg-white/20 rounded-lg py-1 text-white font-bold focus:outline-none focus:ring-2 focus:ring-white/50" />
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <label class="text-xs text-white/60 uppercase tracking-widest">Long Break</label>
+        <input id="input-long" type="number" min="1" max="99" value="15"
+          class="w-16 text-center bg-white/20 rounded-lg py-1 text-white font-bold focus:outline-none focus:ring-2 focus:ring-white/50" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MODES = {
+      pomodoro: { label: 'Focus',       bg: 'bg-red-500',   btnColor: 'text-red-500' },
+      short:    { label: 'Short Break', bg: 'bg-teal-500',  btnColor: 'text-teal-500' },
+      long:     { label: 'Long Break',  bg: 'bg-blue-500',  btnColor: 'text-blue-500' },
+    };
+
+    const CIRCUMFERENCE = 2 * Math.PI * 108; // 678.6
+
+    let currentMode = 'pomodoro';
+    let totalSeconds = 1500;
+    let remainingSeconds = 1500;
+    let isRunning = false;
+    let intervalId = null;
+    let completedPomodoros = 0;
+
+    const app           = document.getElementById('app');
+    const timerDisplay  = document.getElementById('timer-display');
+    const modeLabel     = document.getElementById('mode-label');
+    const startBtn      = document.getElementById('start-btn');
+    const resetBtn      = document.getElementById('reset-btn');
+    const skipBtn       = document.getElementById('skip-btn');
+    const ring          = document.getElementById('progress-ring');
+    const sessionCount  = document.getElementById('session-count');
+    const sessionDots   = document.querySelectorAll('.session-dot');
+    const modeBtns      = document.querySelectorAll('.btn-mode');
+
+    const inputPomodoro = document.getElementById('input-pomodoro');
+    const inputShort    = document.getElementById('input-short');
+    const inputLong     = document.getElementById('input-long');
+
+    function getCustomTime(mode) {
+      if (mode === 'pomodoro') return parseInt(inputPomodoro.value) * 60;
+      if (mode === 'short')    return parseInt(inputShort.value) * 60;
+      if (mode === 'long')     return parseInt(inputLong.value) * 60;
+    }
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60).toString().padStart(2, '0');
+      const s = (secs % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function setProgress(remaining, total) {
+      const offset = CIRCUMFERENCE * (1 - remaining / total);
+      ring.style.strokeDashoffset = offset;
+    }
+
+    function updateDisplay() {
+      timerDisplay.textContent = formatTime(remainingSeconds);
+      document.title = `${formatTime(remainingSeconds)} — Pomodoro`;
+      setProgress(remainingSeconds, totalSeconds);
+    }
+
+    function applyMode(mode) {
+      currentMode = mode;
+      totalSeconds = getCustomTime(mode);
+      remainingSeconds = totalSeconds;
+      isRunning = false;
+      clearInterval(intervalId);
+      startBtn.textContent = 'Start';
+
+      const cfg = MODES[mode];
+      app.className = app.className.replace(/bg-\w+-\d+/, cfg.bg);
+      startBtn.className = startBtn.className.replace(/text-\w+-\d+/, cfg.btnColor);
+      modeLabel.textContent = cfg.label;
+
+      modeBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+
+      updateDisplay();
+    }
+
+    function tick() {
+      if (remainingSeconds <= 0) {
+        clearInterval(intervalId);
+        isRunning = false;
+        startBtn.textContent = 'Start';
+        playBeep();
+        onTimerEnd();
+        return;
+      }
+      remainingSeconds--;
+      updateDisplay();
+    }
+
+    function onTimerEnd() {
+      if (currentMode === 'pomodoro') {
+        completedPomodoros++;
+        updateDots();
+        if (completedPomodoros % 4 === 0) {
+          applyMode('long');
+        } else {
+          applyMode('short');
+        }
+      } else {
+        applyMode('pomodoro');
+      }
+    }
+
+    function updateDots() {
+      const count = completedPomodoros % 4 || (completedPomodoros > 0 ? 4 : 0);
+      sessionCount.textContent = completedPomodoros + 1;
+      sessionDots.forEach((dot, i) => {
+        dot.classList.toggle('bg-white/90', i < count);
+        dot.classList.toggle('bg-white/30', i >= count);
+      });
+    }
+
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 1.2);
+      } catch(e) { /* audio not available */ }
+    }
+
+    // Events
+    startBtn.addEventListener('click', () => {
+      if (isRunning) {
+        clearInterval(intervalId);
+        isRunning = false;
+        startBtn.textContent = 'Resume';
+      } else {
+        isRunning = true;
+        startBtn.textContent = 'Pause';
+        intervalId = setInterval(tick, 1000);
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      clearInterval(intervalId);
+      isRunning = false;
+      startBtn.textContent = 'Start';
+      remainingSeconds = totalSeconds;
+      updateDisplay();
+    });
+
+    skipBtn.addEventListener('click', () => {
+      clearInterval(intervalId);
+      isRunning = false;
+      onTimerEnd();
+    });
+
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', () => applyMode(btn.dataset.mode));
+    });
+
+    [inputPomodoro, inputShort, inputLong].forEach(input => {
+      input.addEventListener('change', () => {
+        if (!isRunning) applyMode(currentMode);
+      });
+    });
+
+    // Init
+    applyMode('pomodoro');
+  </script>
+</body>
+</html>
